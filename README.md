@@ -1,6 +1,6 @@
 # Encapsulation linter
 
-`encapsulation-linter` reports access to private fields of encapsulated structs and construction outside recognized constructors. A struct is encapsulated when it has a private field and is exported or has methods. Generated files, `_test.go` files, and standard-library types are excluded.
+`encapsulation-linter` is a Go linter that prevents encapsulation violations by reporting access to private fields of encapsulated structs and construction outside recognized constructors. A struct is encapsulated when it has at least one private field and is exported _or_ has methods. Generated files, `_test.go` files, and standard-library types are excluded.
 
 Run it standalone:
 
