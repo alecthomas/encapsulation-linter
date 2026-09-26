@@ -40,4 +40,4 @@ explicit release = exec {
 }
 
 # Run the normal local validation checks.
-target default = [test, lint]
+target default = [test, lint, fmt-l]
