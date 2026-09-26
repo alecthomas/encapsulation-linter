@@ -1,0 +1,47 @@
+# Build the standalone encapsulation-linter binary used by the repository script.
+encapsulation-linter = go.exe {
+  package = "./cmd/encapsulation-linter"
+  output = "dist/devel/encapsulation-linter"
+  flags = ["-ldflags", "-s -w -buildid="]
+}
+
+# Build golangci-lint with the encapsulation module plugin included.
+custom-gcl = exec {
+  command = "golangci-lint custom --destination dist/devel"
+  inputs = [".custom-gcl.yml", "go.mod", "go.sum", "analyzer/**/*.go", "golangci/**/*.go"]
+  output = "dist/devel/custom-gcl"
+}
+
+# Format all Go source, including analyzer fixtures.
+format = exec {
+  command = "gofmt -w analyzer cmd golangci"
+  inputs = ["analyzer/**/*.go", "cmd/**/*.go", "golangci/**/*.go"]
+}
+
+# Check Go formatting without modifying files.
+format-check = exec.test {
+  command = "gofmt -l analyzer cmd golangci | (! grep .)"
+  inputs = ["analyzer/**/*.go", "cmd/**/*.go", "golangci/**/*.go"]
+}
+
+# Run all Go tests with a bounded timeout.
+test = go.test {
+  package = "./..."
+  flags = ["-timeout", "30s"]
+}
+
+# Run standard golangci-lint checks and the encapsulation analyzer.
+lint = exec.test {
+  command = "dist/devel/custom-gcl run"
+  inputs = [".golangci.yml", "go.mod", "go.sum", "analyzer/**/*.go", "cmd/**/*.go", "golangci/**/*.go"]
+  depends_on = [custom-gcl]
+}
+
+# Publish standalone binaries for the current version tag.
+explicit release = exec {
+  command = "goreleaser release"
+  inputs = [".goreleaser.yml", "go.mod", "go.sum", "README.md", "analyzer/**/*.go", "cmd/**/*.go", "golangci/**/*.go"]
+}
+
+# Run the normal local validation checks.
+target default = [test, lint]

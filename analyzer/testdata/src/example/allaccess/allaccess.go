@@ -1,6 +1,7 @@
 package allaccess
 
-type widget struct { hidden int }
+type widget struct{ hidden int }
+
 func (*widget) Touch() {}
 
 func use(w *widget) {

@@ -1,3 +1,3 @@
 package iface
 
-type Node interface { Visit() }
+type Node interface{ Visit() }

@@ -1,0 +1,38 @@
+version: 2
+
+project_name: encapsulation-linter
+
+release:
+  github:
+    owner: alecthomas
+    name: encapsulation-linter
+
+env:
+  - CGO_ENABLED=0
+
+builds:
+  - dir: ./cmd/encapsulation-linter
+    main: .
+    binary: encapsulation-linter
+    goos:
+      - linux
+      - darwin
+      - windows
+    goarch:
+      - arm64
+      - amd64
+      - "386"
+    goarm:
+      - "6"
+
+archives:
+  - formats: ["tar.gz"]
+    name_template: "{{ .Binary }}-{{ .Version }}-{{ .Os }}-{{ .Arch }}{{ if .Arm }}v{{ .Arm }}{{ end }}"
+    files:
+      - README*
+
+snapshot:
+  version_template: SNAPSHOT-{{ .Commit }}
+
+checksum:
+  name_template: "{{ .ProjectName }}-{{ .Version }}-checksums.txt"

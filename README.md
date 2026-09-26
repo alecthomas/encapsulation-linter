@@ -45,6 +45,6 @@ linters:
         #   allow-factory: "lexer.StatefulDefinition:lexer.StatefulLexer"
 ```
 
-Then run `golangci-lint custom` and use the resulting `./custom-gcl run ./...`.
+Inside this repository's Hermit environment, run `golangci-lint run`. The repository wrapper uses Bit to build and cache the custom binary containing the module plugin before invoking it. Use `bit format`, `bit format-check`, or `bit test` for the other development checks. Outside that environment, run `golangci-lint custom` and use the resulting `./custom-gcl run ./...`.
 
 A recognized constructor is any package-level function that returns the concrete type, a pointer to it, or a non-empty interface implemented by either. If a type has no direct constructor, it may also be constructed inside a field initializer of another type's constructor when that field's type contains it. Methods of a struct that directly embeds such a type may access its private fields through the embedded field. A directly returned closure of a named functional-option type may access private fields through its target parameter. Methods may access their own type's private fields. Exported fields and private structs without methods are unrestricted.

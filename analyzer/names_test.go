@@ -17,8 +17,8 @@ func TestModulePath(t *testing.T) {
 		t.Fatal(err)
 	}
 	pass := &analysis.Pass{
-		Fset: fset,
-		Pkg: types.NewPackage("github.com/alecthomas/encapsulation-linter/analyzer", "analyzer"),
+		Fset:  fset,
+		Pkg:   types.NewPackage("github.com/alecthomas/encapsulation-linter/analyzer", "analyzer"),
 		Files: []*ast.File{file},
 	}
 	if got := modulePath(pass); got != "github.com/alecthomas/encapsulation-linter" {

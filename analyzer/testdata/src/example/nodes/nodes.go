@@ -1,16 +1,16 @@
 package nodes
 
-type node interface { Visit() }
+type node interface{ Visit() }
 
-type disjunction struct { nodes []node }
+type disjunction struct{ nodes []node }
 
 func (*disjunction) Visit() {}
 
-type strct struct { expr node }
+type strct struct{ expr node }
 
 func (*strct) Visit() {}
 
-type unrelated struct { hidden int }
+type unrelated struct{ hidden int }
 
 func (*unrelated) Touch() {}
 

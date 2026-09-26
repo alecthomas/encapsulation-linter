@@ -1,0 +1,6 @@
+version: v2.14.0
+
+plugins:
+  - module: github.com/alecthomas/encapsulation-linter
+    import: github.com/alecthomas/encapsulation-linter/golangci
+    path: .

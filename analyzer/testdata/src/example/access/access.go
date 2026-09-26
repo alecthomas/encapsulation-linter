@@ -1,13 +1,14 @@
 package access
 
-type Access struct { hidden int } // want Access:"&\\{false\\}"
-func (*Access) Touch() {}
+type Access struct{ hidden int } // want Access:"&\\{false\\}"
+func (*Access) Touch()           {}
 
 type ReadOnly struct { // want ReadOnly:"&\\{false\\}"
 	hidden int
 	items  []int
 	table  map[int]int
 }
+
 func (*ReadOnly) Touch() {}
 
 type WriteOnly struct { // want WriteOnly:"&\\{false\\}"
@@ -15,13 +16,14 @@ type WriteOnly struct { // want WriteOnly:"&\\{false\\}"
 	items  []int
 	table  map[int]int
 }
+
 func (*WriteOnly) Touch() {}
 
-type Denied struct { hidden int } // want Denied:"&\\{false\\}"
-func (*Denied) Touch() {}
+type Denied struct{ hidden int } // want Denied:"&\\{false\\}"
+func (*Denied) Touch()           {}
 
-type Combined struct { hidden []int } // want Combined:"&\\{false\\}"
-func (*Combined) Touch() {}
+type Combined struct{ hidden []int } // want Combined:"&\\{false\\}"
+func (*Combined) Touch()             {}
 
 type Worker struct{}
 
@@ -33,20 +35,20 @@ func (Worker) exercise(a *Access, r *ReadOnly, w *WriteOnly, d *Denied) {
 
 	_ = r.hidden
 	r.hidden = r.hidden // want "private field example/access.ReadOnly.hidden"
-	r.hidden++ // want "private field example/access.ReadOnly.hidden"
-	_ = &r.hidden // want "private field example/access.ReadOnly.hidden"
+	r.hidden++          // want "private field example/access.ReadOnly.hidden"
+	_ = &r.hidden       // want "private field example/access.ReadOnly.hidden"
 
 	w.hidden = 1
 	w.hidden++
 	w.hidden = w.hidden // want "private field example/access.WriteOnly.hidden"
-	_ = w.hidden // want "private field example/access.WriteOnly.hidden"
+	_ = w.hidden        // want "private field example/access.WriteOnly.hidden"
 	_ = &w.hidden
 
 	_ = d.hidden // want "private field example/access.Denied.hidden"
 	d.hidden = 1 // want "private field example/access.Denied.hidden"
 
 	values := make([]int, 3)
-	values[w.hidden] = 1 // want "private field example/access.WriteOnly.hidden"
+	values[w.hidden] = 1          // want "private field example/access.WriteOnly.hidden"
 	for r.hidden = range values { // want "private field example/access.ReadOnly.hidden"
 	}
 	for w.hidden = range values {
@@ -68,7 +70,7 @@ func permittedHelper(r *ReadOnly) { _ = r.hidden }
 func outsider(a *Access, r *ReadOnly, w *WriteOnly, c *Combined) {
 	_ = a.hidden
 	a.hidden = 1
-	_ = r.hidden // want "private field example/access.ReadOnly.hidden"
-	w.hidden = 1 // want "private field example/access.WriteOnly.hidden"
+	_ = r.hidden                   // want "private field example/access.ReadOnly.hidden"
+	w.hidden = 1                   // want "private field example/access.WriteOnly.hidden"
 	c.hidden = append(c.hidden, 1) // want "private field example/access.Combined.hidden" "private field example/access.Combined.hidden"
 }

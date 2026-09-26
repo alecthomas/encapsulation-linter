@@ -12,17 +12,17 @@ func (w *Widget) rebuild() *Widget {
 	return &Widget{} // want "encapsulated struct example/base.Widget may only be constructed"
 }
 
-type Value interface { Value() int }
+type Value interface{ Value() int }
 
 func NewWidget() *Widget { return &Widget{private: 1} }
-func Widgetf() Widget { return Widget{} }
-func MakeWidget() Value { return &Widget{} }
-func New() *Widget { return new(Widget) }
+func Widgetf() Widget    { return Widget{} }
+func MakeWidget() Value  { return &Widget{} }
+func New() *Widget       { return new(Widget) }
 
 func helper(w *Widget) {
 	_ = w.private // want "private field example/base.Widget.private may only be accessed"
 	_ = w.Public
-	_ = Widget{} // want "encapsulated struct example/base.Widget may only be constructed"
+	_ = Widget{}    // want "encapsulated struct example/base.Widget may only be constructed"
 	_ = new(Widget) // want "encapsulated struct example/base.Widget may only be constructed"
 }
 
@@ -33,7 +33,7 @@ func WithPrivate(v int, other *Widget) Option {
 		target.private = v
 		other.private = v // want "private field example/base.Widget.private may only be accessed"
 		alias := target
-		alias.private = v // want "private field example/base.Widget.private may only be accessed"
+		alias.private = v          // want "private field example/base.Widget.private may only be accessed"
 		target.sibling.private = v // want "private field example/base.Widget.private may only be accessed"
 	}
 }
@@ -42,7 +42,7 @@ func WithConverted(v int) Option {
 	return Option(func(target *Widget) { target.private = v })
 }
 
-type OptionInterface interface { Apply(*Widget) error }
+type OptionInterface interface{ Apply(*Widget) error }
 type OptionFunc func(*Widget) error
 
 func (option OptionFunc) Apply(target *Widget) error { return option(target) }
@@ -60,14 +60,15 @@ func WithIndirect(v int) Option {
 	return option
 }
 
-type internal struct { private int }
+type internal struct{ private int }
 
 func plain() {
 	v := internal{private: 1}
 	_ = v.private
 }
 
-type guarded struct { private int }
+type guarded struct{ private int }
+
 func (*guarded) Touch() {}
 
 func NewGuarded() *guarded { return new(guarded) }
@@ -77,7 +78,7 @@ func bypass(g *guarded) {
 	_ = guarded{} // want "encapsulated struct example/base.guarded may only be constructed"
 }
 
-type HTTPServer struct { private int } // want HTTPServer:"&\\{true\\}"
+type HTTPServer struct{ private int } // want HTTPServer:"&\\{true\\}"
 
 func NewHttpServer() *HTTPServer { return &HTTPServer{} }
 
@@ -92,19 +93,19 @@ func WrongWidget() *HTTPServer {
 	return &HTTPServer{}
 }
 
-type Box[T any] struct { value T } // want Box:"&\\{true\\}"
+type Box[T any] struct{ value T } // want Box:"&\\{true\\}"
 
 func (b *Box[T]) Get() T { return b.value }
 
 func NewBox[T any](value T) *Box[T] { return &Box[T]{value: value} }
 
 func useBox(b *Box[int]) {
-	_ = b.value // want "private field example/base.Box.value may only be accessed"
-	_ = Box[int]{} // want "encapsulated struct example/base.Box may only be constructed"
+	_ = b.value       // want "private field example/base.Box.value may only be accessed"
+	_ = Box[int]{}    // want "encapsulated struct example/base.Box may only be constructed"
 	_ = new(Box[int]) // want "encapsulated struct example/base.Box may only be constructed"
 }
 
-type Outer struct { *Widget }
+type Outer struct{ *Widget }
 
 func (o *Outer) misuse() {
 	_ = o.private // want "private field example/base.Widget.private may only be accessed"
@@ -114,11 +115,11 @@ func usePromoted(o *Outer) {
 	_ = o.private // want "private field example/base.Widget.private may only be accessed"
 }
 
-type EmbeddedState struct { private int } // want EmbeddedState:"&\\{false\\}"
+type EmbeddedState struct{ private int } // want EmbeddedState:"&\\{false\\}"
 
 func (s EmbeddedState) Current() int { return s.private }
 
-type EmbeddedOwner struct { EmbeddedState }
+type EmbeddedOwner struct{ EmbeddedState }
 
 func NewEmbeddedOwner() *EmbeddedOwner { return &EmbeddedOwner{} }
 
@@ -129,7 +130,7 @@ func (o *EmbeddedOwner) update(state EmbeddedState) {
 }
 
 func useEmbeddedOwner(o *EmbeddedOwner) {
-	_ = o.private // want "private field example/base.EmbeddedState.private may only be accessed"
+	_ = o.private               // want "private field example/base.EmbeddedState.private may only be accessed"
 	_ = o.EmbeddedState.private // want "private field example/base.EmbeddedState.private may only be accessed"
 }
 
@@ -139,8 +140,8 @@ func useAlias() {
 	_ = Alias{} // want "encapsulated struct example/base.Widget may only be constructed"
 }
 
-type Child struct { hidden int } // want Child:"&\\{false\\}"
-type DirectChild struct { hidden int } // want DirectChild:"&\\{true\\}"
+type Child struct{ hidden int }       // want Child:"&\\{false\\}"
+type DirectChild struct{ hidden int } // want DirectChild:"&\\{true\\}"
 
 func Arbitrary() any { return nil }
 
@@ -158,7 +159,7 @@ func Assemble() *Parent {
 		Children: []*Child{{hidden: 1}},
 		One:      new(Child),
 		Direct:   &DirectChild{}, // want "encapsulated struct example/base.DirectChild may only be constructed"
-		Other:    &Child{}, // want "encapsulated struct example/base.Child may only be constructed"
+		Other:    &Child{},       // want "encapsulated struct example/base.Child may only be constructed"
 	}
 }
 
@@ -166,6 +167,6 @@ func Assemble() *Parent {
 func BuildDirectChild() *DirectChild { return &DirectChild{} }
 
 func UseChild() {
-	_ = Child{} // want "encapsulated struct example/base.Child may only be constructed"
+	_ = Child{}               // want "encapsulated struct example/base.Child may only be constructed"
 	_ = Parent{One: &Child{}} // want "encapsulated struct example/base.Child may only be constructed"
 }

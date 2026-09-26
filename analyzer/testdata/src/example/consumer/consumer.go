@@ -6,8 +6,8 @@ import (
 )
 
 func use() {
-	_ = base.Widget{} // want "encapsulated struct example/base.Widget may only be constructed"
-	_ = new(base.Widget) // want "encapsulated struct example/base.Widget may only be constructed"
+	_ = base.Widget{}          // want "encapsulated struct example/base.Widget may only be constructed"
+	_ = new(base.Widget)       // want "encapsulated struct example/base.Widget may only be constructed"
 	_ = base.Widget{Public: 1} // want "encapsulated struct example/base.Widget may only be constructed"
 	_ = reflect.Value{}
 	_ = new(reflect.Value)

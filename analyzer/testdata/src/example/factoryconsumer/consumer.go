@@ -2,7 +2,7 @@ package factoryconsumer
 
 import "example/factorynarrow"
 
-type Parent struct { Child *factorynarrow.Target }
+type Parent struct{ Child *factorynarrow.Target }
 
 func NewParent() *Parent {
 	return &Parent{

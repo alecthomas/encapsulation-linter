@@ -7,7 +7,7 @@ type Target struct { // want Target:"&\\{true\\}"
 
 func (t *Target) Value() int { return t.private }
 
-type Value interface { Value() int }
+type Value interface{ Value() int }
 
 type Factory struct{}
 
@@ -40,7 +40,7 @@ func (Factory) Nested() *Target {
 
 func (Factory) Overwritten() *Target {
 	target := &Target{} // want "encapsulated struct example/factorynarrow.Target may only be constructed"
-	target = &Target{} // want "encapsulated struct example/factorynarrow.Target may only be constructed"
+	target = &Target{}  // want "encapsulated struct example/factorynarrow.Target may only be constructed"
 	return target
 }
 
@@ -54,7 +54,7 @@ func (OtherFactory) Make() *Target {
 	return &Target{} // want "encapsulated struct example/factorynarrow.Target may only be constructed"
 }
 
-type Parent struct { Child *Target }
+type Parent struct{ Child *Target }
 
 func NewParent() *Parent {
 	return &Parent{

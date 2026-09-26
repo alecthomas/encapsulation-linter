@@ -2,21 +2,21 @@ package factoryinterface
 
 import "example/iface"
 
-type node interface { Node() }
+type node interface{ Node() }
 
-type first struct { hidden int }
+type first struct{ hidden int }
 
 func (*first) Node() {}
 
-type second struct { hidden int }
+type second struct{ hidden int }
 
 func (*second) Node() {}
 
-type imported struct { hidden int }
+type imported struct{ hidden int }
 
 func (*imported) Visit() {}
 
-type unrelated struct { hidden int }
+type unrelated struct{ hidden int }
 
 func (*unrelated) Other() {}
 

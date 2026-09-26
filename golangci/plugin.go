@@ -14,8 +14,8 @@ func init() {
 }
 
 type settings struct {
-	AllowReads  string `json:"allow-reads"`
-	AllowWrites string `json:"allow-writes"`
+	AllowReads   string `json:"allow-reads"`
+	AllowWrites  string `json:"allow-writes"`
 	AllowFactory string `json:"allow-factory"`
 }
 
@@ -36,8 +36,8 @@ func newPlugin(conf any) (register.LinterPlugin, error) {
 
 func (p plugin) BuildAnalyzers() ([]*analysis.Analyzer, error) {
 	return []*analysis.Analyzer{analyzer.NewAnalyzer(analyzer.Config{
-		AllowReads:  p.settings.AllowReads,
-		AllowWrites: p.settings.AllowWrites,
+		AllowReads:   p.settings.AllowReads,
+		AllowWrites:  p.settings.AllowWrites,
 		AllowFactory: p.settings.AllowFactory,
 	})}, nil
 }

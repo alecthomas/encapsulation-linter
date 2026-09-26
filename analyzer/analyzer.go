@@ -14,8 +14,8 @@ import (
 
 // Config controls writer-to-target exemptions for private-field access.
 type Config struct {
-	AllowReads  string
-	AllowWrites string
+	AllowReads   string
+	AllowWrites  string
 	AllowFactory string
 }
 
@@ -85,7 +85,7 @@ func validAccessName(name string) bool {
 	return token.IsIdentifier(name)
 }
 
-func (ctx context) writer() types.Object {
+func contextWriter(ctx context) types.Object {
 	var writer types.Object
 	// A method's writer is its receiver type, not its individual method name.
 	if ctx.method != nil {
@@ -137,15 +137,15 @@ type encapsulatedFact struct {
 func (*encapsulatedFact) AFact() {}
 
 type checker struct {
-	pass         *analysis.Pass
-	modulePath   string
-	facts        map[*types.TypeName]encapsulatedFact
-	standard     map[string]bool
-	allowedReads allowlist
-	allowedWrites allowlist
+	pass             *analysis.Pass
+	modulePath       string
+	facts            map[*types.TypeName]encapsulatedFact
+	standard         map[string]bool
+	allowedReads     allowlist
+	allowedWrites    allowlist
 	allowedFactories allowlist
-	factoryNodes map[ast.Node]bool
-	factoryOwners map[*types.TypeName]bool
+	factoryNodes     map[ast.Node]bool
+	factoryOwners    map[*types.TypeName]bool
 }
 
 type context struct {
@@ -178,15 +178,15 @@ func run(pass *analysis.Pass, reads, writes, factories allowlist) (any, error) {
 
 func newChecker(pass *analysis.Pass, reads, writes, factories allowlist) *checker {
 	return &checker{
-		pass:          pass,
-		modulePath:    modulePath(pass),
-		facts:         make(map[*types.TypeName]encapsulatedFact),
-		standard:      make(map[string]bool),
-		allowedReads:  reads,
-		allowedWrites: writes,
+		pass:             pass,
+		modulePath:       modulePath(pass),
+		facts:            make(map[*types.TypeName]encapsulatedFact),
+		standard:         make(map[string]bool),
+		allowedReads:     reads,
+		allowedWrites:    writes,
 		allowedFactories: factories,
-		factoryNodes: make(map[ast.Node]bool),
-		factoryOwners: make(map[*types.TypeName]bool),
+		factoryNodes:     make(map[ast.Node]bool),
+		factoryOwners:    make(map[*types.TypeName]bool),
 	}
 }
 
@@ -368,10 +368,10 @@ func (c *checker) checkSelector(sel *ast.SelectorExpr, ctx context, ancestors []
 		return
 	}
 	if c.isWrite(sel, ancestors) {
-		if c.allows(c.allowedWrites, ctx.writer(), owner, true) {
+		if c.allows(c.allowedWrites, contextWriter(ctx), owner, true) {
 			return
 		}
-	} else if c.allows(c.allowedReads, ctx.writer(), owner, true) {
+	} else if c.allows(c.allowedReads, contextWriter(ctx), owner, true) {
 		return
 	}
 	c.pass.Reportf(sel.Sel.Pos(), "private field %s.%s.%s may only be accessed by its methods, constructor, a direct functional option, or an eligible embedding type's methods", owner.Pkg().Path(), owner.Name(), field.Name())

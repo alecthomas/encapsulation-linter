@@ -37,8 +37,8 @@ func TestSettings(t *testing.T) {
 		t.Fatal(err)
 	}
 	plugin, err := newPlugin(map[string]any{
-		"allow-reads":  "all:example/access.Access",
-		"allow-writes": "all:all",
+		"allow-reads":   "all:example/access.Access",
+		"allow-writes":  "all:all",
 		"allow-factory": "all:lexer.StatefulLexer",
 	})
 	if err != nil {
