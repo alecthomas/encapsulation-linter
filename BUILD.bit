@@ -12,16 +12,14 @@ custom-gcl = exec {
   output = "dist/devel/custom-gcl"
 }
 
-# Format all Go source, including analyzer fixtures.
-format = exec {
-  command = "gofmt -w analyzer cmd golangci"
-  inputs = ["analyzer/**/*.go", "cmd/**/*.go", "golangci/**/*.go"]
+# Format all Go packages.
+fmt = go.fmt {
+  package = "./..."
 }
 
-# Check Go formatting without modifying files.
-format-check = exec.test {
-  command = "gofmt -l analyzer cmd golangci | (! grep .)"
-  inputs = ["analyzer/**/*.go", "cmd/**/*.go", "golangci/**/*.go"]
+# Check that all Go packages are formatted without modifying files.
+fmt-l = go.fmt-l {
+  package = "./..."
 }
 
 # Run all Go tests with a bounded timeout.
@@ -31,10 +29,8 @@ test = go.test {
 }
 
 # Run standard golangci-lint checks and the encapsulation analyzer.
-lint = exec.test {
-  command = "dist/devel/custom-gcl run"
-  inputs = [".golangci.yml", "go.mod", "go.sum", "analyzer/**/*.go", "cmd/**/*.go", "golangci/**/*.go"]
-  depends_on = [custom-gcl]
+lint = go.lint {
+  package = "./..."
 }
 
 # Publish standalone binaries for the current version tag.

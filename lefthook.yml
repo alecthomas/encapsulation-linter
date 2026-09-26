@@ -1,0 +1,16 @@
+skip_lfs: true
+output:
+  - success
+  - failure
+pre-commit:
+  commands:
+    fmt:
+      run: bit fmt
+      stage_fixed: true
+pre-push:
+  parallel: true
+  commands:
+    test:
+      run: bit test
+    lint:
+      run: bit lint
