@@ -106,3 +106,44 @@ linters:
 ```
 
 Inside this repository's Hermit environment, run `golangci-lint run`. The repository wrapper uses Bit to build and cache the custom binary containing the module plugin before invoking it. Use `bit fmt` to format source, `bit fmt-l` to check formatting, and `bit test` to run tests. Outside that environment, run `golangci-lint custom` and use the resulting `./custom-gcl run ./...`.
+
+## Example violations
+
+Assume `Config` is declared in the `config` package of the
+`example.com/project` module:
+
+```go
+package config
+
+type Config struct {
+	secret string
+}
+
+func (c *Config) Secret() string {
+	return c.secret // Allowed: methods may access their receiver's fields.
+}
+```
+
+Reading the private field from an ordinary function is a violation:
+
+```go
+func reveal(config *Config) string {
+	return config.secret
+}
+```
+
+```text
+private field example.com/project/config.Config.secret may only be accessed by its methods, constructor, a direct functional option, or an eligible embedding type's methods
+```
+
+Constructing the type outside a constructor is also a violation:
+
+```go
+func reset() {
+	_ = &Config{}
+}
+```
+
+```text
+encapsulated struct example.com/project/config.Config may only be constructed in its constructor, returned from an allowed factory method, or used as a field in an eligible parent constructor
+```
