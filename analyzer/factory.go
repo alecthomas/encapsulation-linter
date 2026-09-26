@@ -41,7 +41,7 @@ func (c *checker) collectFactoryConstructions(files []*ast.File) {
 				case *ast.CallExpr:
 					owner = typeName(c.newType(node))
 				}
-				if owner == nil || owner.Pkg() != c.pass.Pkg || !c.allowedFactories.allowsPair(factory, owner) {
+				if owner == nil || owner.Pkg() != c.pass.Pkg || !c.allows(c.allowedFactories, factory, owner, true) {
 					return true
 				}
 				if c.factoryReturnsConstruction(method, sig, owner, node) {

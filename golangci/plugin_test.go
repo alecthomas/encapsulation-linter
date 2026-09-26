@@ -39,7 +39,7 @@ func TestSettings(t *testing.T) {
 	plugin, err := newPlugin(map[string]any{
 		"allow-reads":  "all:example/access.Access",
 		"allow-writes": "all:all",
-		"allow-factory": "all:StatefulLexer",
+		"allow-factory": "all:lexer.StatefulLexer",
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -54,7 +54,7 @@ func TestSettings(t *testing.T) {
 	if got := analyzers[0].Flags.Lookup("allow-writes").Value.String(); got != "all:all" {
 		t.Fatalf("allow-writes = %q", got)
 	}
-	if got := analyzers[0].Flags.Lookup("allow-factory").Value.String(); got != "all:StatefulLexer" {
+	if got := analyzers[0].Flags.Lookup("allow-factory").Value.String(); got != "all:lexer.StatefulLexer" {
 		t.Fatalf("allow-factory = %q", got)
 	}
 }

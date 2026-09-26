@@ -8,12 +8,12 @@ Run it standalone:
 go run ./cmd/encapsulation-linter ./...
 ```
 
-Use `-allow-reads` and `-allow-writes` with comma-separated `writer:target` pairs. A writer is a method receiver type or a package-level function; a target is the type whose private fields are accessed. An unqualified name matches in any package, while `example.com/project.Config` matches one package. Use `all` on either side to match every writer or target; `all:all` exempts every private-field access. The flags are independent and do not exempt struct construction. Assignments, increments, address-taking, and mutating builtins such as `clear` and `delete` count as writes. An assignment that also reads the field needs both exemptions.
+Use `-allow-reads` and `-allow-writes` with comma-separated `writer:target` pairs. A writer is a method receiver type or a package-level function. A target is a concrete type or an interface; an interface matches field-owning types implemented by their value or pointer type when that interface is declared in, or directly imported by, the field owner's package. For example, `visit:node` allows `visit` to access all private fields of types implementing `node`. Names are relative to the analyzed module root: `Config` names a root-package type, `lexer.Config` names one in the `lexer` subpackage, and `example.com/project/lexer.Config` is an exact full-path name. Use `all` on either side to match every writer or target; `all:all` exempts every private-field access. The flags are independent and do not exempt struct construction. Assignments, increments, address-taking, and mutating builtins such as `clear` and `delete` count as writes. An assignment that also reads the field needs both exemptions.
 
-Use `-allow-factory` with comma-separated `factory:type` pairs to permit factory methods to construct encapsulated types. The factory is a method receiver type; `all` and package-qualified names work on either side. A method must be in the constructed type's package and return that newly constructed value, directly or through a local variable that is not reassigned, as the concrete type or an implemented non-empty interface. Constructing a value only to store it elsewhere is not exempted. An allowed factory counts as a direct constructor, so the parent-constructor fallback does not apply to that type.
+Use `-allow-factory` with comma-separated `factory:type` pairs to permit factory methods to construct encapsulated types. The factory is a method receiver type. The target may be a concrete type or an interface implemented by the constructed type's value or pointer type, using the same interface matching as read/write rules. Module-relative names, full paths, and `all` work on either side. A method must be in the constructed type's package and return that newly constructed value, directly or through a local variable that is not reassigned, as the concrete type or an implemented non-empty interface. Constructing a value only to store it elsewhere is not exempted. An allowed factory counts as a direct constructor, so the parent-constructor fallback does not apply to that type.
 
 ```sh
-go run ./cmd/encapsulation-linter -allow-factory=StatefulDefinition:StatefulLexer -allow-reads=ActionPop:StatefulLexer,ActionPush:StatefulLexer -allow-writes=ActionPop:StatefulLexer,ActionPush:StatefulLexer ./...
+go run ./cmd/encapsulation-linter -allow-factory=lexer.StatefulDefinition:lexer.StatefulLexer -allow-reads=lexer.ActionPop:lexer.StatefulLexer,lexer.ActionPush:lexer.StatefulLexer -allow-writes=lexer.ActionPop:lexer.StatefulLexer,lexer.ActionPush:lexer.StatefulLexer ./...
 ```
 
 For golangci-lint v2, build a custom binary with the module plugin:
@@ -40,9 +40,9 @@ linters:
         type: module
         # Optional:
         # settings:
-        #   allow-reads: "ActionPop:StatefulLexer,ActionPush:StatefulLexer"
-        #   allow-writes: "ActionPop:StatefulLexer,ActionPush:StatefulLexer"
-        #   allow-factory: "StatefulDefinition:StatefulLexer"
+        #   allow-reads: "lexer.ActionPop:lexer.StatefulLexer,lexer.ActionPush:lexer.StatefulLexer"
+        #   allow-writes: "lexer.ActionPop:lexer.StatefulLexer,lexer.ActionPush:lexer.StatefulLexer"
+        #   allow-factory: "lexer.StatefulDefinition:lexer.StatefulLexer"
 ```
 
 Then run `golangci-lint custom` and use the resulting `./custom-gcl run ./...`.

@@ -30,9 +30,9 @@ func NewAnalyzer(config Config) *analysis.Analyzer {
 		Doc:       "check access to encapsulated struct fields and construction",
 		FactTypes: []analysis.Fact{new(encapsulatedFact)},
 	}
-	a.Flags.StringVar(&reads, "allow-reads", config.AllowReads, `comma-separated writer:target pairs allowed to read private fields (use "all" for either side)`)
-	a.Flags.StringVar(&writes, "allow-writes", config.AllowWrites, `comma-separated writer:target pairs allowed to write private fields (use "all" for either side)`)
-	a.Flags.StringVar(&factories, "allow-factory", config.AllowFactory, `comma-separated factory:type pairs whose methods may return newly constructed values (use "all" for either side)`)
+	a.Flags.StringVar(&reads, "allow-reads", config.AllowReads, `comma-separated module-relative writer:target pairs allowed to read private fields; targets may be interfaces; use "all" for either side`)
+	a.Flags.StringVar(&writes, "allow-writes", config.AllowWrites, `comma-separated module-relative writer:target pairs allowed to write private fields; targets may be interfaces; use "all" for either side`)
+	a.Flags.StringVar(&factories, "allow-factory", config.AllowFactory, `comma-separated module-relative factory:type pairs whose methods may return newly constructed values; targets may be interfaces; use "all" for either side`)
 	a.Run = func(pass *analysis.Pass) (any, error) {
 		allowedReads, err := parseAllowlist(reads)
 		if err != nil {
@@ -85,7 +85,7 @@ func validAccessName(name string) bool {
 	return token.IsIdentifier(name)
 }
 
-func (list allowlist) allows(ctx context, owner *types.TypeName) bool {
+func (ctx context) writer() types.Object {
 	var writer types.Object
 	// A method's writer is its receiver type, not its individual method name.
 	if ctx.method != nil {
@@ -93,24 +93,39 @@ func (list allowlist) allows(ctx context, owner *types.TypeName) bool {
 	} else if ctx.fn != nil {
 		writer = ctx.fn
 	}
-	return list.allowsPair(writer, owner)
+	return writer
 }
 
-func (list allowlist) allowsPair(writer types.Object, owner *types.TypeName) bool {
+func (c *checker) allows(list allowlist, writer types.Object, owner *types.TypeName, interfaces bool) bool {
 	for _, rule := range list {
-		if matchesAccessName(rule.writer, writer) && matchesAccessName(rule.target, owner) {
+		if !matchesAccessName(rule.writer, writer, c.modulePath) {
+			continue
+		}
+		if matchesAccessName(rule.target, owner, c.modulePath) || (interfaces && c.matchesInterfaceTarget(rule.target, owner)) {
 			return true
 		}
 	}
 	return false
 }
 
-func matchesAccessName(name string, obj types.Object) bool {
+func matchesAccessName(name string, obj types.Object, modulePath string) bool {
 	if name == "all" {
 		return true
 	}
-	return obj != nil && obj.Pkg() != nil &&
-		(name == obj.Name() || name == obj.Pkg().Path()+"."+obj.Name())
+	if obj == nil || obj.Pkg() == nil {
+		return false
+	}
+	path := obj.Pkg().Path()
+	if name == path+"."+obj.Name() {
+		return true
+	}
+	if path == modulePath {
+		return name == obj.Name()
+	}
+	if strings.HasPrefix(path, modulePath+"/") {
+		return name == strings.TrimPrefix(path, modulePath+"/")+"."+obj.Name()
+	}
+	return false
 }
 
 // A type fact carries construction policy to importing packages. Go's type
@@ -123,6 +138,7 @@ func (*encapsulatedFact) AFact() {}
 
 type checker struct {
 	pass         *analysis.Pass
+	modulePath   string
 	facts        map[*types.TypeName]encapsulatedFact
 	standard     map[string]bool
 	allowedReads allowlist
@@ -163,6 +179,7 @@ func run(pass *analysis.Pass, reads, writes, factories allowlist) (any, error) {
 func newChecker(pass *analysis.Pass, reads, writes, factories allowlist) *checker {
 	return &checker{
 		pass:          pass,
+		modulePath:    modulePath(pass),
 		facts:         make(map[*types.TypeName]encapsulatedFact),
 		standard:      make(map[string]bool),
 		allowedReads:  reads,
@@ -351,10 +368,10 @@ func (c *checker) checkSelector(sel *ast.SelectorExpr, ctx context, ancestors []
 		return
 	}
 	if c.isWrite(sel, ancestors) {
-		if c.allowedWrites.allows(ctx, owner) {
+		if c.allows(c.allowedWrites, ctx.writer(), owner, true) {
 			return
 		}
-	} else if c.allowedReads.allows(ctx, owner) {
+	} else if c.allows(c.allowedReads, ctx.writer(), owner, true) {
 		return
 	}
 	c.pass.Reportf(sel.Sel.Pos(), "private field %s.%s.%s may only be accessed by its methods, constructor, a direct functional option, or an eligible embedding type's methods", owner.Pkg().Path(), owner.Name(), field.Name())

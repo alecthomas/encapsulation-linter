@@ -27,9 +27,24 @@ func TestAllowAll(t *testing.T) {
 	analysistest.Run(t, analysistest.TestData(), a, "example/allaccess")
 }
 
+func TestInterfaceTargets(t *testing.T) {
+	a := analyzer.NewAnalyzer(analyzer.Config{AllowReads: "visit:node", AllowWrites: "visit:node"})
+	analysistest.Run(t, analysistest.TestData(), a, "example/nodes")
+}
+
+func TestImportedInterfaceTarget(t *testing.T) {
+	a := analyzer.NewAnalyzer(analyzer.Config{AllowReads: "inspect:example/iface.Node"})
+	analysistest.Run(t, analysistest.TestData(), a, "example/iface", "example/impl")
+}
+
 func TestAllowFactory(t *testing.T) {
 	a := analyzer.NewAnalyzer(analyzer.Config{AllowFactory: "example/factorynarrow.Factory:Target"})
 	analysistest.Run(t, analysistest.TestData(), a, "example/factorynarrow", "example/factoryconsumer")
+}
+
+func TestAllowInterfaceFactory(t *testing.T) {
+	a := analyzer.NewAnalyzer(analyzer.Config{AllowFactory: "Maker:node,Maker:example/iface.Node"})
+	analysistest.Run(t, analysistest.TestData(), a, "example/iface", "example/factoryinterface")
 }
 
 func TestAllowAllFactories(t *testing.T) {
