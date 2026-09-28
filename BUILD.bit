@@ -33,6 +33,16 @@ lint = go.lint {
   package = "./..."
 }
 
+# Tag a new release
+explicit bump = exec {
+  command = <<-EOF
+  test "$(svu current)" = "$(svu next)" && exit 0
+  git tag "$(svu next)"
+  git push --tags
+  echo "Bumped to $(svu next)"
+  EOF
+}
+
 # Publish standalone binaries for the current version tag.
 explicit release = exec {
   command = "goreleaser release"
