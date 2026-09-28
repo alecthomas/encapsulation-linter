@@ -1,6 +1,6 @@
 package base
 
-type Widget struct { // want Widget:"&\\{true\\}"
+type Widget struct { // want Widget:"&\\{true false\\}"
 	private int
 	Public  int
 	sibling *Widget
@@ -78,7 +78,7 @@ func bypass(g *guarded) {
 	_ = guarded{} // want "encapsulated struct example/base.guarded may only be constructed"
 }
 
-type HTTPServer struct{ private int } // want HTTPServer:"&\\{true\\}"
+type HTTPServer struct{ private int } // want HTTPServer:"&\\{true false\\}"
 
 func NewHttpServer() *HTTPServer { return &HTTPServer{} }
 
@@ -93,7 +93,7 @@ func WrongWidget() *HTTPServer {
 	return &HTTPServer{}
 }
 
-type Box[T any] struct{ value T } // want Box:"&\\{true\\}"
+type Box[T any] struct{ value T } // want Box:"&\\{true false\\}"
 
 func (b *Box[T]) Get() T { return b.value }
 
@@ -115,7 +115,7 @@ func usePromoted(o *Outer) {
 	_ = o.private // want "private field example/base.Widget.private may only be accessed"
 }
 
-type EmbeddedState struct{ private int } // want EmbeddedState:"&\\{false\\}"
+type EmbeddedState struct{ private int } // want EmbeddedState:"&\\{false false\\}"
 
 func (s EmbeddedState) Current() int { return s.private }
 
@@ -140,8 +140,8 @@ func useAlias() {
 	_ = Alias{} // want "encapsulated struct example/base.Widget may only be constructed"
 }
 
-type Child struct{ hidden int }       // want Child:"&\\{false\\}"
-type DirectChild struct{ hidden int } // want DirectChild:"&\\{true\\}"
+type Child struct{ hidden int }       // want Child:"&\\{false false\\}"
+type DirectChild struct{ hidden int } // want DirectChild:"&\\{true false\\}"
 
 func Arbitrary() any { return nil }
 

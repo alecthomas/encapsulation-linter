@@ -2,6 +2,7 @@ package consumer
 
 import (
 	"example/base"
+	"example/generated"
 	"reflect"
 )
 
@@ -14,6 +15,7 @@ func use() {
 	_ = base.NewWidget()
 	_ = base.Widgetf()
 	_ = base.Child{} // want "encapsulated struct example/base.Child may only be constructed"
+	_ = generated.Message{} // want "encapsulated struct example/generated.Message may only be constructed"
 }
 
 type Container struct {

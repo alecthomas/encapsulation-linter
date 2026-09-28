@@ -1,6 +1,6 @@
 package factorynarrow
 
-type Target struct { // want Target:"&\\{true\\}"
+type Target struct { // want Target:"&\\{true false\\}"
 	private int
 	next    *Target
 }
