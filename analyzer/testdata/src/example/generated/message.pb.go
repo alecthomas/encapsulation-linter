@@ -2,7 +2,7 @@
 
 package generated
 
-type Message struct { // want Message:"&\\{false true\\}"
+type Message struct { // want Message:"&\\{false true \\}"
 	state int
 	Name  string
 }

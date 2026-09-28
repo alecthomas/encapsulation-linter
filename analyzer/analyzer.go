@@ -138,12 +138,15 @@ type encapsulatedFact struct {
 	// Generated records the declaring file rather than the construction
 	// policy, so each analyzing package applies its own configuration.
 	Generated bool
+	// Module is empty when the declaring package's module is unknown.
+	Module string
 }
 
 func (*encapsulatedFact) AFact() {}
 
 type checker struct {
 	pass             *analysis.Pass
+	module           string
 	modulePath       string
 	facts            map[*types.TypeName]encapsulatedFact
 	standard         map[string]bool
@@ -195,9 +198,11 @@ func (c *checker) checkedFiles() []*ast.File {
 }
 
 func newChecker(pass *analysis.Pass, reads, writes, factories allowlist, generatedConstruction bool) *checker {
+	module := enclosingModule(pass)
 	return &checker{
 		pass:                       pass,
-		modulePath:                 modulePath(pass),
+		module:                     module,
+		modulePath:                 modulePath(pass, module),
 		facts:                      make(map[*types.TypeName]encapsulatedFact),
 		standard:                   make(map[string]bool),
 		allowedReads:               reads,
@@ -253,6 +258,7 @@ func (c *checker) collectTypes() {
 		fact := encapsulatedFact{
 			DirectConstructor: c.hasLocalConstructor(obj),
 			Generated:         c.generatedFiles[c.pass.Fset.File(obj.Pos())],
+			Module:            c.module,
 		}
 		c.facts[obj] = fact
 		if obj.Exported() {
@@ -285,8 +291,15 @@ func (c *checker) metadata(obj *types.TypeName) (encapsulatedFact, bool) {
 		return fact, ok
 	}
 	var fact encapsulatedFact
-	ok := c.pass.ImportObjectFact(obj, &fact)
-	return fact, ok
+	if !c.pass.ImportObjectFact(obj, &fact) {
+		return encapsulatedFact{}, false
+	}
+	// Like the standard library, other modules are outside the codebase
+	// being linted, so their types are constructed through their public API.
+	if fact.Module != "" && c.module != "" && fact.Module != c.module {
+		return encapsulatedFact{}, false
+	}
+	return fact, true
 }
 
 func (c *checker) isEncapsulated(obj *types.TypeName) bool {

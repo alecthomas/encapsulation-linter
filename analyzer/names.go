@@ -10,14 +10,18 @@ import (
 	"golang.org/x/tools/go/analysis"
 )
 
-func modulePath(pass *analysis.Pass) string {
-	if pass.Pkg == nil {
+// enclosingModule returns the module containing the analyzed package, or ""
+// when neither the driver nor an enclosing go.mod identifies one.
+func enclosingModule(pass *analysis.Pass) string {
+	// Drivers know the module of vendored packages, which a go.mod search
+	// cannot find.
+	if pass.Module != nil && pass.Module.Path != "" {
+		return pass.Module.Path
+	}
+	if pass.Pkg == nil || pass.Fset == nil {
 		return ""
 	}
 	path := pass.Pkg.Path()
-	if pass.Fset == nil {
-		return path
-	}
 	for _, file := range pass.Files {
 		filename := pass.Fset.PositionFor(file.Pos(), false).Filename
 		if absolute, err := filepath.Abs(filename); err == nil {
@@ -32,7 +36,7 @@ func modulePath(pass *analysis.Pass) string {
 				}
 				// The nearest go.mod is the module boundary, even when this
 				// package was loaded under a different import path.
-				return path
+				return ""
 			}
 			parent := filepath.Dir(dir)
 			if parent == dir {
@@ -40,9 +44,17 @@ func modulePath(pass *analysis.Pass) string {
 			}
 		}
 	}
+	return ""
+}
+
+// modulePath returns the root for module-relative access names.
+func modulePath(pass *analysis.Pass, module string) string {
+	if module != "" || pass.Pkg == nil {
+		return module
+	}
 	// Packages without a matching go.mod still accept names relative to
 	// their own package, as in GOPATH-based analysistest fixtures.
-	return path
+	return pass.Pkg.Path()
 }
 
 func (c *checker) matchesInterfaceTarget(name string, owner *types.TypeName) bool {

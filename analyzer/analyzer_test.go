@@ -1,6 +1,7 @@
 package analyzer_test
 
 import (
+	"path/filepath"
 	"testing"
 
 	"github.com/alecthomas/encapsulation-linter/analyzer"
@@ -55,4 +56,8 @@ func TestAllowAllFactories(t *testing.T) {
 func TestAllowGeneratedConstruction(t *testing.T) {
 	a := analyzer.NewAnalyzer(analyzer.Config{AllowGeneratedConstruction: true})
 	analysistest.Run(t, analysistest.TestData(), a, "example/generated", "example/generatedconsumer")
+}
+
+func TestOtherModulesExempt(t *testing.T) {
+	analysistest.Run(t, filepath.Join(analysistest.TestData(), "modules", "app"), analyzer.Analyzer, "example.com/app", "example.com/app/local")
 }

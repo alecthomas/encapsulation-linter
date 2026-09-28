@@ -21,12 +21,20 @@ func TestModulePath(t *testing.T) {
 		Pkg:   types.NewPackage("github.com/alecthomas/encapsulation-linter/analyzer", "analyzer"),
 		Files: []*ast.File{file},
 	}
-	if got := modulePath(pass); got != "github.com/alecthomas/encapsulation-linter" {
+	if got := modulePath(pass, enclosingModule(pass)); got != "github.com/alecthomas/encapsulation-linter" {
 		t.Fatalf("module path = %q", got)
 	}
 	pass.Pkg = types.NewPackage("example/access", "access")
-	if got := modulePath(pass); got != "example/access" {
+	if got := enclosingModule(pass); got != "" {
+		t.Fatalf("unrelated package module = %q", got)
+	}
+	if got := modulePath(pass, enclosingModule(pass)); got != "example/access" {
 		t.Fatalf("unrelated package path = %q", got)
+	}
+	pass.Module = &analysis.Module{Path: "example.com/vendored"}
+	pass.Pkg = types.NewPackage("example.com/vendored/lib", "lib")
+	if got := enclosingModule(pass); got != "example.com/vendored" {
+		t.Fatalf("driver module = %q", got)
 	}
 }
 

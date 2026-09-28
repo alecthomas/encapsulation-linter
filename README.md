@@ -4,6 +4,9 @@
 by reporting access to private fields outside methods, and construction outside
 recognized constructors.
 
+Only types declared in the analyzed module are checked. Types from the standard
+library and other modules may be constructed anywhere.
+
 Run it standalone:
 
 ```sh

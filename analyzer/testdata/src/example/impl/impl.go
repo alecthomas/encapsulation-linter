@@ -2,7 +2,7 @@ package impl
 
 import "example/iface"
 
-type Item struct{ hidden int } // want Item:"&\\{false false\\}"
+type Item struct{ hidden int } // want Item:"&\\{false false \\}"
 
 func (*Item) Visit() {}
 

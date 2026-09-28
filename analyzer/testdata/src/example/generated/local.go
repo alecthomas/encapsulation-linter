@@ -1,6 +1,6 @@
 package generated
 
-type Local struct { // want Local:"&\\{false false\\}"
+type Local struct { // want Local:"&\\{false false \\}"
 	private int
 }
 
