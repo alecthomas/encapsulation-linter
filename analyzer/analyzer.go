@@ -169,11 +169,21 @@ func run(pass *analysis.Pass, reads, writes, factories allowlist, generatedConst
 	if c.isStandardPackage(pass.Pkg) {
 		return nil, nil
 	}
-	files := make([]*ast.File, 0, len(pass.Files))
-	for _, file := range pass.Files {
-		name := pass.Fset.PositionFor(file.Pos(), false).Filename
+	files := c.checkedFiles()
+	c.collectFactoryConstructions(files)
+	c.collectTypes()
+	for _, file := range files {
+		c.checkFile(file)
+	}
+	return nil, nil
+}
+
+func (c *checker) checkedFiles() []*ast.File {
+	files := make([]*ast.File, 0, len(c.pass.Files))
+	for _, file := range c.pass.Files {
+		name := c.pass.Fset.PositionFor(file.Pos(), false).Filename
 		if ast.IsGenerated(file) {
-			c.generatedFiles[pass.Fset.File(file.Pos())] = true
+			c.generatedFiles[c.pass.Fset.File(file.Pos())] = true
 			continue
 		}
 		if strings.HasSuffix(name, "_test.go") {
@@ -181,12 +191,7 @@ func run(pass *analysis.Pass, reads, writes, factories allowlist, generatedConst
 		}
 		files = append(files, file)
 	}
-	c.collectFactoryConstructions(files)
-	c.collectTypes()
-	for _, file := range files {
-		c.checkFile(file)
-	}
-	return nil, nil
+	return files
 }
 
 func newChecker(pass *analysis.Pass, reads, writes, factories allowlist, generatedConstruction bool) *checker {
