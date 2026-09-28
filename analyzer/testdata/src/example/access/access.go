@@ -1,9 +1,9 @@
 package access
 
-type Access struct{ hidden int } // want Access:"&\\{false\\}"
+type Access struct{ hidden int } // want Access:"&\\{false false\\}"
 func (*Access) Touch()           {}
 
-type ReadOnly struct { // want ReadOnly:"&\\{false\\}"
+type ReadOnly struct { // want ReadOnly:"&\\{false false\\}"
 	hidden int
 	items  []int
 	table  map[int]int
@@ -11,7 +11,7 @@ type ReadOnly struct { // want ReadOnly:"&\\{false\\}"
 
 func (*ReadOnly) Touch() {}
 
-type WriteOnly struct { // want WriteOnly:"&\\{false\\}"
+type WriteOnly struct { // want WriteOnly:"&\\{false false\\}"
 	hidden int
 	items  []int
 	table  map[int]int
@@ -19,10 +19,10 @@ type WriteOnly struct { // want WriteOnly:"&\\{false\\}"
 
 func (*WriteOnly) Touch() {}
 
-type Denied struct{ hidden int } // want Denied:"&\\{false\\}"
+type Denied struct{ hidden int } // want Denied:"&\\{false false\\}"
 func (*Denied) Touch()           {}
 
-type Combined struct{ hidden []int } // want Combined:"&\\{false\\}"
+type Combined struct{ hidden []int } // want Combined:"&\\{false false\\}"
 func (*Combined) Touch()             {}
 
 type Worker struct{}

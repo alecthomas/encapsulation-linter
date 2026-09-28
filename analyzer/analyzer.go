@@ -12,11 +12,12 @@ import (
 	"golang.org/x/tools/go/analysis"
 )
 
-// Config controls writer-to-target exemptions for private-field access.
+// Config controls exemptions for private-field access and construction.
 type Config struct {
-	AllowReads   string
-	AllowWrites  string
-	AllowFactory string
+	AllowReads                 string
+	AllowWrites                string
+	AllowFactory               string
+	AllowGeneratedConstruction bool
 }
 
 // Analyzer enforces construction and private-field access through a type's API.
@@ -25,6 +26,7 @@ var Analyzer = NewAnalyzer(Config{})
 // NewAnalyzer returns an independent analyzer with configurable access rules.
 func NewAnalyzer(config Config) *analysis.Analyzer {
 	var reads, writes, factories string
+	var generatedConstruction bool
 	a := &analysis.Analyzer{
 		Name:      "encapsulation",
 		Doc:       "check access to encapsulated struct fields and construction",
@@ -33,6 +35,7 @@ func NewAnalyzer(config Config) *analysis.Analyzer {
 	a.Flags.StringVar(&reads, "allow-reads", config.AllowReads, `comma-separated module-relative writer:target pairs allowed to read private fields; targets may be interfaces; use "all" for either side`)
 	a.Flags.StringVar(&writes, "allow-writes", config.AllowWrites, `comma-separated module-relative writer:target pairs allowed to write private fields; targets may be interfaces; use "all" for either side`)
 	a.Flags.StringVar(&factories, "allow-factory", config.AllowFactory, `comma-separated module-relative factory:type pairs whose methods may return newly constructed values; targets may be interfaces; use "all" for either side`)
+	a.Flags.BoolVar(&generatedConstruction, "allow-generated-construction", config.AllowGeneratedConstruction, "allow construction of structs declared in generated files from anywhere")
 	a.Run = func(pass *analysis.Pass) (any, error) {
 		allowedReads, err := parseAllowlist(reads)
 		if err != nil {
@@ -46,7 +49,7 @@ func NewAnalyzer(config Config) *analysis.Analyzer {
 		if err != nil {
 			return nil, fmt.Errorf("allow-factory: %w", err)
 		}
-		return run(pass, allowedReads, allowedWrites, allowedFactories)
+		return run(pass, allowedReads, allowedWrites, allowedFactories, generatedConstruction)
 	}
 	return a
 }
@@ -132,6 +135,9 @@ func matchesAccessName(name string, obj types.Object, modulePath string) bool {
 // checker already prevents those packages from naming private fields.
 type encapsulatedFact struct {
 	DirectConstructor bool
+	// Generated records the declaring file rather than the construction
+	// policy, so each analyzing package applies its own configuration.
+	Generated bool
 }
 
 func (*encapsulatedFact) AFact() {}
@@ -146,6 +152,9 @@ type checker struct {
 	allowedFactories allowlist
 	factoryNodes     map[ast.Node]bool
 	factoryOwners    map[*types.TypeName]bool
+	// Generated files are excluded from checking but still declare types.
+	generatedFiles             map[*token.File]bool
+	allowGeneratedConstruction bool
 }
 
 type context struct {
@@ -155,15 +164,19 @@ type context struct {
 	option *types.TypeName
 }
 
-func run(pass *analysis.Pass, reads, writes, factories allowlist) (any, error) {
-	c := newChecker(pass, reads, writes, factories)
+func run(pass *analysis.Pass, reads, writes, factories allowlist, generatedConstruction bool) (any, error) {
+	c := newChecker(pass, reads, writes, factories, generatedConstruction)
 	if c.isStandardPackage(pass.Pkg) {
 		return nil, nil
 	}
 	files := make([]*ast.File, 0, len(pass.Files))
 	for _, file := range pass.Files {
 		name := pass.Fset.PositionFor(file.Pos(), false).Filename
-		if strings.HasSuffix(name, "_test.go") || ast.IsGenerated(file) {
+		if ast.IsGenerated(file) {
+			c.generatedFiles[pass.Fset.File(file.Pos())] = true
+			continue
+		}
+		if strings.HasSuffix(name, "_test.go") {
 			continue
 		}
 		files = append(files, file)
@@ -176,17 +189,19 @@ func run(pass *analysis.Pass, reads, writes, factories allowlist) (any, error) {
 	return nil, nil
 }
 
-func newChecker(pass *analysis.Pass, reads, writes, factories allowlist) *checker {
+func newChecker(pass *analysis.Pass, reads, writes, factories allowlist, generatedConstruction bool) *checker {
 	return &checker{
-		pass:             pass,
-		modulePath:       modulePath(pass),
-		facts:            make(map[*types.TypeName]encapsulatedFact),
-		standard:         make(map[string]bool),
-		allowedReads:     reads,
-		allowedWrites:    writes,
-		allowedFactories: factories,
-		factoryNodes:     make(map[ast.Node]bool),
-		factoryOwners:    make(map[*types.TypeName]bool),
+		pass:                       pass,
+		modulePath:                 modulePath(pass),
+		facts:                      make(map[*types.TypeName]encapsulatedFact),
+		standard:                   make(map[string]bool),
+		allowedReads:               reads,
+		allowedWrites:              writes,
+		allowedFactories:           factories,
+		factoryNodes:               make(map[ast.Node]bool),
+		factoryOwners:              make(map[*types.TypeName]bool),
+		generatedFiles:             make(map[*token.File]bool),
+		allowGeneratedConstruction: generatedConstruction,
 	}
 }
 
@@ -230,7 +245,10 @@ func (c *checker) collectTypes() {
 		if !hasPrivate || (!obj.Exported() && named.NumMethods() == 0) {
 			continue
 		}
-		fact := encapsulatedFact{DirectConstructor: c.hasLocalConstructor(obj)}
+		fact := encapsulatedFact{
+			DirectConstructor: c.hasLocalConstructor(obj),
+			Generated:         c.generatedFiles[c.pass.Fset.File(obj.Pos())],
+		}
 		c.facts[obj] = fact
 		if obj.Exported() {
 			c.pass.ExportObjectFact(obj, &fact)
@@ -513,7 +531,7 @@ func (c *checker) isTarget(expr ast.Expr, target *types.Var) bool {
 func (c *checker) checkConstruction(node ast.Node, t types.Type, ctx context, ancestors []ast.Node) {
 	owner := typeName(t)
 	fact, encapsulated := c.metadata(owner)
-	if !encapsulated || c.isConstructor(ctx.fn, owner) || c.factoryNodes[node] {
+	if !encapsulated || (fact.Generated && c.allowGeneratedConstruction) || c.isConstructor(ctx.fn, owner) || c.factoryNodes[node] {
 		return
 	}
 	if !fact.DirectConstructor && c.inParentField(owner, ctx, ancestors, node) {

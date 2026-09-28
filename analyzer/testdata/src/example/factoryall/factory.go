@@ -1,10 +1,10 @@
 package factoryall
 
-type First struct{ hidden int } // want First:"&\\{true\\}"
+type First struct{ hidden int } // want First:"&\\{true false\\}"
 
 func (f First) Clone() *First { return &First{} }
 
-type Second struct{ hidden int } // want Second:"&\\{true\\}"
+type Second struct{ hidden int } // want Second:"&\\{true false\\}"
 
 type Maker struct{}
 

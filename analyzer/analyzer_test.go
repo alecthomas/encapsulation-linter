@@ -51,3 +51,8 @@ func TestAllowAllFactories(t *testing.T) {
 	a := analyzer.NewAnalyzer(analyzer.Config{AllowFactory: "all:all"})
 	analysistest.Run(t, analysistest.TestData(), a, "example/factoryall")
 }
+
+func TestAllowGeneratedConstruction(t *testing.T) {
+	a := analyzer.NewAnalyzer(analyzer.Config{AllowGeneratedConstruction: true})
+	analysistest.Run(t, analysistest.TestData(), a, "example/generated", "example/generatedconsumer")
+}

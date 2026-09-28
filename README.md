@@ -72,6 +72,17 @@ go run ./cmd/encapsulation-linter \
   ./...
 ```
 
+## Generated struct exceptions
+
+Use `-allow-generated-construction` to permit construction of structs declared
+in generated files, such as Protocol Buffers messages, from any package. A file
+is generated when it contains a `// Code generated ... DO NOT EDIT.` comment.
+This does not exempt access to their private fields.
+
+```sh
+go run ./cmd/encapsulation-linter -allow-generated-construction ./...
+```
+
 For golangci-lint v2, build a custom binary with the module plugin:
 
 ```yaml
@@ -103,6 +114,7 @@ linters:
         #     lexer.ActionPop:lexer.StatefulLexer,
         #     lexer.ActionPush:lexer.StatefulLexer
         #   allow-factory: "lexer.StatefulDefinition:lexer.StatefulLexer"
+        #   allow-generated-construction: true
 ```
 
 Inside this repository's Hermit environment, run `golangci-lint run`. The repository wrapper uses Bit to build and cache the custom binary containing the module plugin before invoking it. Use `bit fmt` to format source, `bit fmt-l` to check formatting, and `bit test` to run tests. Outside that environment, run `golangci-lint custom` and use the resulting `./custom-gcl run ./...`.
